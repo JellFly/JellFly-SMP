@@ -1,0 +1,765 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vote ServeurPrivé - Connexion</title>
+  <style>
+    :root {
+      --bg: #0b111b;
+      --surface: #111b26;
+      --surface-2: #141d2c;
+      --text: #e7edf8;
+      --muted: #8fa3ba;
+      --border: #1f2a3c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: #08101b;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: clamp(2rem, 2.6vw, 3rem);
+      line-height: 1.05;
+    }
+
+    .topbar p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.65;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section-title strong {
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .site-button, .action-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      border: 1px solid #1f2a3c;
+      border-radius: 10px;
+      padding: 18px 20px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      margin-bottom: 14px;
+    }
+
+    .site-button:hover,
+    .action-button:hover {
+      background: #182236;
+    }
+
+    .site-button span,
+    .action-button span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .form-row {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid #1f2a3c;
+      background: #101a23;
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .form-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .form-actions button {
+      border: none;
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #192433;
+      color: var(--text);
+    }
+
+    .form-actions button:hover {
+      background: #27334b;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .stat-item {
+      background: #121b26;
+      border: 1px solid #1f2a3c;
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .stat-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .stat-item strong {
+      font-size: 1.4rem;
+      line-height: 1.2;
+    }
+
+    .info-text {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin-top: 18px;
+    }
+
+    .status-box {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      background: #101a23;
+      border: 1px solid #1f2a3c;
+    }
+
+    .status-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      min-width: 560px;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #1f2a3c;
+    }
+
+    .history-table th {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .history-table tbody tr:hover {
+      background: #182236;
+    }
+
+    .history-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .control-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .history-table {
+        min-width: auto;
+      }
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <h1>Vote ServeurPrivé</h1>
+        <p>Connecte-toi pour afficher ton nombre de votes stocké en base de données. Le palier est calculé directement depuis ton compte.</p>
+      </div>
+    </div>
+    <div class="layout">
+      <aside class="panel">
+        <div class="section-title"><strong>Connexion</strong></div>
+
+            <div class="status-box" id="authStatus">
+          <p>Connecte-toi ou crée un compte pour gérer tes votes.</p>
+        </div>
+
+        <div class="form-row" id="authForm">
+          <div class="form-group">
+            <label for="username">Pseudo</label>
+            <input id="username" type="text" placeholder="Ton pseudo Minecraft" />
+          </div>
+          <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input id="password" type="password" placeholder="Ton mot de passe" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="loginButton">Se connecter</button>
+          <button id="registerButton">Créer un compte</button>
+        </div>
+        <div class="form-actions">
+          <button id="loadOfficialButton">Charger stats officielles</button>
+        </div>
+
+        <div class="control-row" id="accountControls" style="display:none;">
+          <button class="action-button" id="logoutButton">Se déconnecter<span>Sortie</span></button>
+          <button class="action-button" id="voteButton">Ouvrir le vote<span>serveur-prive.net</span></button>
+          <button class="action-button" id="incrementVoteButton">Ajouter +1 vote<span>Base de données</span></button>
+        </div>
+
+        <div class="info-text">
+          Le nombre de votes est stocké dans la base de données. L’interface affiche ton palier et te laisse ouvrir le lien de vote officiel.
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="section-title"><strong>Statut des votes</strong></div>
+
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span>Utilisateur connecté</span>
+            <strong id="connectedUser">Aucun</strong>
+          </div>
+          <div class="stat-item">
+            <span>Votes enregistrés</span>
+            <strong id="votesTotal">0 votes</strong>
+          </div>
+          <div class="stat-item">
+            <span>Palier actuel</span>
+            <strong id="currentTier">Aucun</strong>
+          </div>
+          <div class="stat-item">
+            <span>Votes jusqu’au prochain</span>
+            <strong id="votesRemaining">1 vote</strong>
+          </div>
+        </div>
+
+        <div class="status-box" id="tierInfo">
+          <p>Connecte-toi pour voir ton palier et les récompenses associées.</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <div class="section-title"><strong>Stats officielles ServeurPrivé</strong></div>
+      <div class="stat-grid">
+        <div class="stat-item">
+          <span>Classement officiel</span>
+          <strong id="officialRank">N/A</strong>
+        </div>
+        <div class="stat-item">
+          <span>Votes total</span>
+          <strong id="officialTotalVotes">N/A</strong>
+        </div>
+        <div class="stat-item">
+          <span>Historique 7 jours</span>
+          <strong id="officialChartLabel">N/A</strong>
+        </div>
+        <div class="stat-item">
+          <span>Top voteurs</span>
+          <strong id="officialTopVoters">Non disponible</strong>
+        </div>
+      </div>
+      <div class="status-box" id="officialStatus">
+        <p>Appuie sur le bouton pour charger les statistiques officielles du serveur.</p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <div class="history-title">Tableau des paliers</div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Palier</th>
+            <th>Votes</th>
+            <th>Récompenses principales</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Niveau 1</td>
+            <td>1–5</td>
+            <td>Pain, Charbon, Bûches, Fer</td>
+          </tr>
+          <tr>
+            <td>Niveau 2</td>
+            <td>6–15</td>
+            <td>Steak, Fer, Charbon, Bouclier</td>
+          </tr>
+          <tr>
+            <td>Niveau 3</td>
+            <td>16–30</td>
+            <td>Lapis, Redstone, Arc, Perles</td>
+          </tr>
+          <tr>
+            <td>Niveau 4</td>
+            <td>31–50</td>
+            <td>Or, Obsidienne, Quartz, Blaze</td>
+          </tr>
+          <tr>
+            <td>Niveau 5</td>
+            <td>51–100</td>
+            <td>Émeraudes, Glowstone, Livres enchantés, Pommes</td>
+          </tr>
+          <tr>
+            <td>Niveau 6</td>
+            <td>101+</td>
+            <td>Or, Émeraudes, Obsidienne, Livres rares</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    // Site statique compatible GitHub Pages.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDFfRxacvRYNW0lpChtS5Pb8VXrMoeZm2I",
+     authDomain: "voteserveurmc.firebaseapp.com",
+     projectId: "voteserveurmc",
+     storageBucket: "voteserveurmc.firebasestorage.app",
+     messagingSenderId: "280996572152",
+     appId: "1:280996572152:web:f88c17eb2901bc889e840d"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const authStatus = document.getElementById('authStatus');
+    const accountControls = document.getElementById('accountControls');
+    const connectedUser = document.getElementById('connectedUser');
+    const votesTotal = document.getElementById('votesTotal');
+    const currentTier = document.getElementById('currentTier');
+    const votesRemaining = document.getElementById('votesRemaining');
+    const tierInfo = document.getElementById('tierInfo');
+    const loginButton = document.getElementById('loginButton');
+    const registerButton = document.getElementById('registerButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const voteButton = document.getElementById('voteButton');
+    const incrementVoteButton = document.getElementById('incrementVoteButton');
+    const loadOfficialButton = document.getElementById('loadOfficialButton');
+    const officialRank = document.getElementById('officialRank');
+    const officialTotalVotes = document.getElementById('officialTotalVotes');
+    const officialChartLabel = document.getElementById('officialChartLabel');
+    const officialTopVoters = document.getElementById('officialTopVoters');
+    const officialStatus = document.getElementById('officialStatus');
+    const voteStatus = document.getElementById('voteStatus');
+
+    const voteUrl = 'https://serveur-prive.net/minecraft/jellflysmp/vote';
+    const SERVER_TOKEN = 'EDM2YEG8EDM2YEG8';
+    const publicIpService = 'https://api.ipify.org?format=json';
+    const officialServerName = 'JellFly SMP';
+    const officialGameSlug = 'minecraft';
+    const officialApiUrl = 'https://serveur-prive.net/api/v1/servers/find';
+    const tiers = [
+      { min: 1, max: 5, label: 'Niveau 1' },
+      { min: 6, max: 15, label: 'Niveau 2' },
+      { min: 16, max: 30, label: 'Niveau 3' },
+      { min: 31, max: 50, label: 'Niveau 4' },
+      { min: 51, max: 100, label: 'Niveau 5' },
+      { min: 101, max: Infinity, label: 'Niveau 6' }
+    ];
+    let lastOfficialVotes = null;
+    const voteRewards = [
+      'Pack de nourriture',
+      '5 Lingots de fer',
+      '10 Torches',
+      '1 Livre enchanté aléatoire',
+      '32 Blocs de pierre',
+      '1 Bloc d’or',
+      '1 Perle de l’Ender',
+      '1 Potion de soin',
+      '1 Émeraude',
+      '6 Flèches'
+    ];
+
+    function normalizeUsername(username) {
+      return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    }
+
+    function deriveEmail(username) {
+      return `${normalizeUsername(username)}@jellflysmp.local`;
+    }
+
+    function findTier(votes) {
+      return tiers.find(tier => votes >= tier.min && votes <= tier.max) || null;
+    }
+
+    function formatVotes(count) {
+      return `${count} vote${count === 1 ? '' : 's'}`;
+    }
+
+    function updateDisplay(user) {
+      if (!user) {
+        connectedUser.textContent = 'Aucun';
+        votesTotal.textContent = '0 votes';
+        currentTier.textContent = 'Aucun';
+        votesRemaining.textContent = '1 vote';
+        tierInfo.innerHTML = '<p>Connecte-toi pour voir ton palier et les récompenses associées.</p>';
+        accountControls.style.display = 'none';
+        return;
+      }
+
+      connectedUser.textContent = user.username;
+      votesTotal.textContent = formatVotes(user.votes);
+      const tier = findTier(user.votes);
+      accountControls.style.display = 'flex';
+
+      if (!tier) {
+        currentTier.textContent = 'Aucun';
+        votesRemaining.textContent = '1 vote';
+        tierInfo.innerHTML = '<p>Tu n’as pas encore atteint un palier. Continue de voter pour monter de niveau.</p>';
+        return;
+      }
+
+      currentTier.textContent = tier.label;
+      const next = tiers[tiers.indexOf(tier) + 1];
+      const remaining = next ? Math.max(next.min - user.votes, 0) : 0;
+      votesRemaining.textContent = remaining > 0 ? `${remaining} vote${remaining === 1 ? '' : 's'}` : 'Palier max';
+      tierInfo.innerHTML = `<p>Ton total de votes est enregistré en base de données. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
+    }
+
+    async function loadUser() {
+      auth.onAuthStateChanged(async firebaseUser => {
+        if (!firebaseUser) {
+          authStatus.innerHTML = '<p>Connecte-toi ou crée un compte pour afficher tes votes.</p>';
+          updateDisplay(null);
+          return;
+        }
+
+        const doc = await db.collection('users').doc(firebaseUser.uid).get();
+        if (!doc.exists) {
+          authStatus.innerHTML = '<p>Profil introuvable. Déconnexion...</p>';
+          await auth.signOut();
+          updateDisplay(null);
+          return;
+        }
+
+        const data = doc.data();
+        authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
+        updateDisplay({ username: data.username, votes: data.votes });
+      });
+    }
+
+    function updateOfficialDisplay(data, message) {
+      officialRank.textContent = data.rank || 'N/A';
+      officialTotalVotes.textContent = data.total_votes !== null ? `${data.total_votes} votes` : 'N/A';
+      officialChartLabel.textContent = Array.isArray(data.votes_chart) && data.votes_chart.length ? data.votes_chart.join(' / ') : 'N/A';
+      officialTopVoters.textContent = 'Non disponible publiquement';
+      officialStatus.innerHTML = `<p>${message}</p>`;
+    }
+
+    async function fetchOfficialServerInfo() {
+      const response = await fetch(officialApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          server_name: officialServerName,
+          game_slug: officialGameSlug,
+          tag: ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur réseau ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (!result.success || !Array.isArray(result.data) || !result.data.length) {
+        throw new Error(result.error || 'Impossible de charger les données officielles.');
+      }
+
+      return result.data[0];
+    }
+
+    async function getPublicIp() {
+      const response = await fetch(publicIpService, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Impossible de récupérer l'IP publique (${response.status}).`);
+      }
+
+      const result = await response.json();
+      return result.ip;
+    }
+
+    async function checkVoteByIp(ip) {
+      if (!SERVER_TOKEN || SERVER_TOKEN === 'YOUR_SERVER_TOKEN_HERE') {
+        throw new Error('Le token API serveur n’est pas configuré. Remplacez SERVER_TOKEN par votre token.');
+      }
+
+      const url = `https://serveur-prive.net/api/v1/servers/${encodeURIComponent(SERVER_TOKEN)}/votes/${encodeURIComponent(ip)}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur API ServeurPrivé (${response.status}).`);
+      }
+
+      const result = await response.json();
+      return result;
+    }
+
+    function pickRandomReward() {
+      return voteRewards[Math.floor(Math.random() * voteRewards.length)];
+    }
+
+    async function handleVoteButton() {
+      voteStatus.innerHTML = '<p>Calcul de l’IP publique et préparation de la vérification...</p>';
+
+      try {
+        const userIp = await getPublicIp();
+        voteStatus.innerHTML = `<p>IP détectée : <strong>${userIp}</strong>. Vérification de l’état avant le vote...</p>`;
+
+        const beforeVote = await checkVoteByIp(userIp);
+        const beforeVoteAt = beforeVote.success ? beforeVote.data.voted_at : 0;
+        const voteWindow = window.open(voteUrl, '_blank');
+
+        if (!voteWindow) {
+          voteStatus.innerHTML = '<p>Le navigateur a bloqué l’ouverture de la nouvelle fenêtre. Autorise les popups puis réessaie.</p>';
+          return;
+        }
+
+        const delaySeconds = 15;
+        let remainingSeconds = delaySeconds;
+        voteStatus.innerHTML = `<p>Vérification du vote dans ${remainingSeconds} secondes...</p>`;
+        const countdown = setInterval(() => {
+          remainingSeconds -= 1;
+          if (remainingSeconds >= 0) {
+            voteStatus.innerHTML = `<p>Vérification du vote dans ${remainingSeconds} secondes...</p>`;
+          }
+        }, 1000);
+
+        await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+        clearInterval(countdown);
+
+        const afterVote = await checkVoteByIp(userIp);
+        const afterVoteAt = afterVote.success ? afterVote.data.voted_at : 0;
+
+        if (afterVote.success && afterVoteAt > beforeVoteAt) {
+          const reward = pickRandomReward();
+          voteStatus.innerHTML = `<p>Vote confirmé ! Récompense obtenue : <strong>${reward}</strong>.</p>`;
+        } else if (afterVote.success && beforeVote.success && afterVoteAt === beforeVoteAt) {
+          voteStatus.innerHTML = '<p>Tu as déjà voté récemment. Aucune nouvelle action détectée, recharge plus tard si nécessaire.</p>';
+        } else if (afterVote.success) {
+          const reward = pickRandomReward();
+          voteStatus.innerHTML = `<p>Vote confirmé ! Récompense obtenue : <strong>${reward}</strong>.</p>`;
+        } else {
+          voteStatus.innerHTML = '<p>Vote non confirmé après 15 secondes. Si tu as bien voté, réessaie ou attends un peu plus longtemps.</p>';
+        }
+      } catch (error) {
+        voteStatus.innerHTML = `<p>Erreur lors de la vérification : ${error.message}</p>`;
+      }
+    }
+
+    async function loadOfficialStats() {
+      officialStatus.innerHTML = '<p>Chargement des statistiques officielles...</p>';
+      try {
+        const response = await fetch(officialApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            server_name: officialServerName,
+            game_slug: officialGameSlug,
+            tag: ''
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur réseau ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || 'Impossible de charger les données officielles.');
+        }
+
+        const server = result.data && result.data.length ? result.data[0] : null;
+        if (!server) {
+          throw new Error('Aucun serveur trouvé avec ce nom.');
+        }
+
+        const stats = {
+          rank: server.rank || 'N/A',
+          total_votes: server.votes || null,
+          votes_chart: server.votes_history || []
+        };
+        lastOfficialVotes = server.votes || null;
+
+        updateOfficialDisplay(stats, 'Statistiques officielles chargées. Top voteurs non accessibles publiquement.');
+      } catch (error) {
+        officialStatus.innerHTML = `<p>Erreur : ${error.message}</p>`;
+      }
+    }
+
+    async function handleAuth(action) {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      if (!username || !password) {
+        authStatus.innerHTML = '<p>Le pseudo et le mot de passe sont requis.</p>';
+        return;
+      }
+
+      const email = deriveEmail(username);
+
+      try {
+        if (action === 'register') {
+          const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+          await db.collection('users').doc(userCredential.user.uid).set({ username, votes: 0 });
+          authStatus.innerHTML = `<p>Compte créé pour <strong>${username}</strong>.</p>`;
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+          authStatus.innerHTML = `<p>Connexion réussie pour <strong>${username}</strong>.</p>`;
+        }
+      } catch (error) {
+        authStatus.innerHTML = `<p>${error.message}</p>`;
+      }
+    }
+
+    async function handleLogout() {
+      await auth.signOut();
+      authStatus.innerHTML = '<p>Déconnecté. Reconnecte-toi pour voir tes votes.</p>';
+      updateDisplay(null);
+    }
+
+    async function handleIncrementVote() {
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        authStatus.innerHTML = '<p>Tu dois être connecté pour ajouter un vote.</p>';
+        return;
+      }
+
+      const userRef = db.collection('users').doc(firebaseUser.uid);
+      try {
+        await db.runTransaction(async tx => {
+          const doc = await tx.get(userRef);
+          if (!doc.exists) throw new Error('Utilisateur introuvable.');
+          const currentVotes = doc.data().votes || 0;
+          tx.update(userRef, { votes: currentVotes + 1 });
+        });
+        const updatedDoc = await userRef.get();
+        const data = updatedDoc.data();
+        authStatus.innerHTML = `<p>Vote ajouté. Total actuel : <strong>${data.votes}</strong>.</p>`;
+        updateDisplay({ username: data.username, votes: data.votes });
+      } catch (error) {
+        authStatus.innerHTML = `<p>${error.message}</p>`;
+      }
+    }
+
+    loginButton.addEventListener('click', () => handleAuth('login'));
+    registerButton.addEventListener('click', () => handleAuth('register'));
+    logoutButton.addEventListener('click', handleLogout);
+    voteButton.addEventListener('click', handleVoteButton);
+    incrementVoteButton.addEventListener('click', handleIncrementVote);
+    loadOfficialButton.addEventListener('click', loadOfficialStats);
+
+    loadUser();
+  </script>
+</body>
+</html>
