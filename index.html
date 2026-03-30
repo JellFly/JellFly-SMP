@@ -552,13 +552,13 @@
 
         const data = doc.data();
         authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
-        let serverVoteResult = null;
+        updateDisplay({ username: data.username, votes: data.votes, serverVoteResult: null });
         try {
-          serverVoteResult = await fetchServerVotes();
+          const serverVoteResult = await fetchServerVotes();
+          updateDisplay({ username: data.username, votes: data.votes, serverVoteResult });
         } catch (error) {
           serverVoteInfo.innerHTML = `<p>Erreur ServeurPrivé : ${error.message}</p>`;
         }
-        updateDisplay({ username: data.username, votes: data.votes, serverVoteResult });
       });
     }
 
@@ -780,9 +780,11 @@
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           await db.collection('users').doc(userCredential.user.uid).set({ username, votes: 0 });
           authStatus.innerHTML = `<p>Compte créé pour <strong>${username}</strong>.</p>`;
+          updateDisplay({ username, votes: 0, serverVoteResult: null });
         } else {
           await auth.signInWithEmailAndPassword(email, password);
           authStatus.innerHTML = `<p>Connexion réussie pour <strong>${username}</strong>.</p>`;
+          updateDisplay({ username, votes: 0, serverVoteResult: null });
         }
       } catch (error) {
         authStatus.innerHTML = `<p>${error.message}</p>`;
