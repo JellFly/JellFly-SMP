@@ -320,6 +320,10 @@
             <strong id="votesTotal">0 votes</strong>
           </div>
           <div class="stat-item">
+            <span>Votes ServeurPrivé</span>
+            <strong id="serverVotes">N/A</strong>
+          </div>
+          <div class="stat-item">
             <span>Palier actuel</span>
             <strong id="currentTier">Aucun</strong>
           </div>
@@ -331,6 +335,9 @@
 
         <div class="status-box" id="tierInfo">
           <p>Connecte-toi pour voir ton palier et les récompenses associées.</p>
+        </div>
+        <div class="status-box" id="serverVoteInfo">
+          <p>Après connexion, le système récupère ton nombre de votes sur ServeurPrivé.</p>
         </div>
       </section>
     </div>
@@ -442,6 +449,8 @@
     const officialTopVoters = document.getElementById('officialTopVoters');
     const officialStatus = document.getElementById('officialStatus');
     const voteStatus = document.getElementById('voteStatus');
+    const serverVotes = document.getElementById('serverVotes');
+    const serverVoteInfo = document.getElementById('serverVoteInfo');
 
     const voteUrl = 'https://serveur-prive.net/minecraft/jellflysmp/vote';
     const SERVER_TOKEN = 'EDM2YEG8EDM2YEG8';
@@ -491,15 +500,23 @@
       if (!user) {
         connectedUser.textContent = 'Aucun';
         votesTotal.textContent = '0 votes';
+        serverVotes.textContent = 'N/A';
         currentTier.textContent = 'Aucun';
         votesRemaining.textContent = '1 vote';
         tierInfo.innerHTML = '<p>Connecte-toi pour voir ton palier et les récompenses associées.</p>';
+        serverVoteInfo.innerHTML = '<p>Après connexion, le système récupère ton nombre de votes sur ServeurPrivé.</p>';
         accountControls.style.display = 'none';
         return;
       }
 
       connectedUser.textContent = user.username;
       votesTotal.textContent = formatVotes(user.votes);
+      if (user.serverVoteResult) {
+        updateServerVoteDisplay(user.serverVoteResult);
+      } else {
+        serverVotes.textContent = 'N/A';
+        serverVoteInfo.innerHTML = '<p>Chargement des votes ServeurPrivé...</p>';
+      }
       const tier = findTier(user.votes);
       accountControls.style.display = 'flex';
 
@@ -535,7 +552,13 @@
 
         const data = doc.data();
         authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
-        updateDisplay({ username: data.username, votes: data.votes });
+        let serverVoteResult = null;
+        try {
+          serverVoteResult = await fetchServerVotes();
+        } catch (error) {
+          serverVoteInfo.innerHTML = `<p>Erreur ServeurPrivé : ${error.message}</p>`;
+        }
+        updateDisplay({ username: data.username, votes: data.votes, serverVoteResult });
       });
     }
 
@@ -608,6 +631,40 @@
       return result;
     }
 
+    function parseServerVoteCount(result) {
+      if (!result || !result.success || !result.data) {
+        return null;
+      }
+      const data = result.data;
+      if (typeof data.votes === 'number') return data.votes;
+      if (typeof data.count === 'number') return data.count;
+      if (typeof data.total_votes === 'number') return data.total_votes;
+      if (typeof data.vote_count === 'number') return data.vote_count;
+      return null;
+    }
+
+    function formatServerVoteStatus(result) {
+      const count = parseServerVoteCount(result);
+      if (count !== null) {
+        return `${count} vote${count === 1 ? '' : 's'}`;
+      }
+      if (result && result.success && result.data && result.data.voted_at) {
+        return 'Vote détecté récemment';
+      }
+      return 'Statut ServeurPrivé inconnu';
+    }
+
+    async function fetchServerVotes() {
+      const ip = await getPublicIp();
+      return await checkVoteByIp(ip);
+    }
+
+    function updateServerVoteDisplay(result) {
+      const count = parseServerVoteCount(result);
+      serverVotes.textContent = count !== null ? `${count} vote${count === 1 ? '' : 's'}` : 'N/A';
+      serverVoteInfo.innerHTML = `<p>${formatServerVoteStatus(result)}</p>`;
+    }
+
     function pickRandomReward() {
       return voteRewards[Math.floor(Math.random() * voteRewards.length)];
     }
@@ -654,6 +711,12 @@
           voteStatus.innerHTML = `<p>Vote confirmé ! Récompense obtenue : <strong>${reward}</strong>.</p>`;
         } else {
           voteStatus.innerHTML = '<p>Vote non confirmé après 15 secondes. Si tu as bien voté, réessaie ou attends un peu plus longtemps.</p>';
+        }
+        try {
+          const updatedServerVotes = await fetchServerVotes();
+          updateServerVoteDisplay(updatedServerVotes);
+        } catch (error) {
+          serverVoteInfo.innerHTML = `<p>Impossible de rafraîchir ServeurPrivé : ${error.message}</p>`;
         }
       } catch (error) {
         voteStatus.innerHTML = `<p>Erreur lors de la vérification : ${error.message}</p>`;
