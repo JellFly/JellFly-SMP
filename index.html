@@ -491,9 +491,9 @@
       const votes = typeof user.serverVoteCount === 'number' ? user.serverVoteCount : null;
       votesTotal.textContent = typeof votes === 'number' ? formatVotes(votes) : 'N/A';
       if (typeof votes === 'number') {
-        serverVoteInfo.innerHTML = `<p>Nombre de votes ServeurPrivé utilisé pour le palier : <strong>${formatVotes(votes)}</strong>.</p>`;
+        serverVoteInfo.innerHTML = `<p>Pseudo connecté <strong>${user.username}</strong> sur ServeurPrivé : <strong>${formatVotes(votes)}</strong>.</p>`;
       } else {
-        serverVoteInfo.innerHTML = '<p>Chargement des votes ServeurPrivé...</p>';
+        serverVoteInfo.innerHTML = '<p>Chargement des votes du pseudo sur ServeurPrivé...</p>';
       }
       const tier = typeof votes === 'number' ? findTier(votes) : null;
       accountControls.style.display = 'flex';
@@ -532,8 +532,7 @@
         authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
         updateDisplay({ username: data.username, serverVoteCount: null });
         try {
-          const server = await fetchOfficialServerInfo();
-          const serverVoteCount = typeof server.votes === 'number' ? server.votes : null;
+          const serverVoteCount = await fetchServeurPriveUserVotes(data.username);
           updateDisplay({ username: data.username, serverVoteCount });
         } catch (error) {
           serverVoteInfo.innerHTML = `<p>Erreur ServeurPrivé : ${error.message}</p>`;
@@ -572,6 +571,27 @@
       }
 
       return result.data[0];
+    }
+
+    async function fetchServeurPriveUserVotes(username) {
+      const profileSlug = normalizeUsername(username);
+      const profileUrl = `https://serveur-prive.net/profil/${encodeURIComponent(profileSlug)}`;
+      const response = await fetch(profileUrl, {
+        method: 'GET',
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Impossible de charger le profil ServeurPrivé (${response.status}).`);
+      }
+
+      const html = await response.text();
+      const match = html.match(/([0-9]+)\s*votes/i);
+      if (!match) {
+        throw new Error('Impossible de trouver le nombre de votes pour ce pseudo sur ServeurPrivé.');
+      }
+
+      return parseInt(match[1], 10);
     }
 
     async function fetchVoteFormToken() {
