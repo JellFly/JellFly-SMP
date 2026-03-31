@@ -446,8 +446,6 @@
     const serverVoteInfo = document.getElementById('serverVoteInfo');
 
     const voteUrl = 'https://serveur-prive.net/minecraft/jellflysmp/vote';
-    const SERVER_TOKEN = 'EDM2YEG8EDM2YEG8';
-    const publicIpService = 'https://api.ipify.org?format=json';
     const officialServerName = 'JellFly SMP';
     const officialGameSlug = 'minecraft';
     const officialApiUrl = 'https://serveur-prive.net/api/v1/servers/find';
@@ -460,18 +458,6 @@
       { min: 101, max: Infinity, label: 'Niveau 6' }
     ];
     let lastOfficialVotes = null;
-    const voteRewards = [
-      'Pack de nourriture',
-      '5 Lingots de fer',
-      '10 Torches',
-      '1 Livre enchanté aléatoire',
-      '32 Blocs de pierre',
-      '1 Bloc d’or',
-      '1 Perle de l’Ender',
-      '1 Potion de soin',
-      '1 Émeraude',
-      '6 Flèches'
-    ];
 
     function normalizeUsername(username) {
       return username.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
@@ -502,10 +488,10 @@
       }
 
       connectedUser.textContent = user.username;
-      const votes = typeof user.serverVoteCount === 'number' ? user.serverVoteCount : (typeof user.votes === 'number' ? user.votes : null);
+      const votes = typeof user.serverVoteCount === 'number' ? user.serverVoteCount : null;
       votesTotal.textContent = typeof votes === 'number' ? formatVotes(votes) : 'N/A';
-      if (user.serverVoteResult) {
-        updateServerVoteDisplay(user.serverVoteResult);
+      if (typeof votes === 'number') {
+        serverVoteInfo.innerHTML = `<p>Nombre de votes ServeurPrivé utilisé pour le palier : <strong>${formatVotes(votes)}</strong>.</p>`;
       } else {
         serverVoteInfo.innerHTML = '<p>Chargement des votes ServeurPrivé...</p>';
       }
@@ -523,7 +509,7 @@
       const next = tiers[tiers.indexOf(tier) + 1];
       const remaining = next ? Math.max(next.min - votes, 0) : 0;
       votesRemaining.textContent = remaining > 0 ? `${remaining} vote${remaining === 1 ? '' : 's'}` : 'Palier max';
-      tierInfo.innerHTML = `<p>Ton total de votes est enregistré en base de données. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
+      tierInfo.innerHTML = `<p>Ton total de votes est récupéré depuis ServeurPrivé. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
     }
 
     async function loadUser() {
@@ -544,11 +530,11 @@
 
         const data = doc.data();
         authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
-        updateDisplay({ username: data.username, votes: null, serverVoteResult: null });
+        updateDisplay({ username: data.username, serverVoteCount: null });
         try {
-          const serverVoteResult = await fetchServerVotes();
-          const serverVoteCount = parseServerVoteCount(serverVoteResult);
-          updateDisplay({ username: data.username, votes: serverVoteCount, serverVoteResult });
+          const server = await fetchOfficialServerInfo();
+          const serverVoteCount = typeof server.votes === 'number' ? server.votes : null;
+          updateDisplay({ username: data.username, serverVoteCount });
         } catch (error) {
           serverVoteInfo.innerHTML = `<p>Erreur ServeurPrivé : ${error.message}</p>`;
         }
@@ -588,145 +574,16 @@
       return result.data[0];
     }
 
-    async function getPublicIp() {
-      const response = await fetch(publicIpService, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Impossible de récupérer l'IP publique (${response.status}).`);
-      }
-
-      const result = await response.json();
-      return result.ip;
-    }
-
-    async function checkVoteByIp(ip) {
-      if (!SERVER_TOKEN || SERVER_TOKEN === 'YOUR_SERVER_TOKEN_HERE') {
-        throw new Error('Le token API serveur n’est pas configuré. Remplacez SERVER_TOKEN par votre token.');
-      }
-
-      const url = `https://serveur-prive.net/api/v1/servers/${encodeURIComponent(SERVER_TOKEN)}/votes/${encodeURIComponent(ip)}`;
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur API ServeurPrivé (${response.status}).`);
-      }
-
-      const result = await response.json();
-      return result;
-    }
-
-    function parseServerVoteCount(result) {
-      if (!result || !result.success || !result.data) {
-        return null;
-      }
-      const data = result.data;
-      if (typeof data.votes === 'number') return data.votes;
-      if (typeof data.count === 'number') return data.count;
-      if (typeof data.total_votes === 'number') return data.total_votes;
-      if (typeof data.vote_count === 'number') return data.vote_count;
-      return null;
-    }
-
-    function formatServerVoteStatus(result) {
-      const count = parseServerVoteCount(result);
-      if (count !== null) {
-        return `${count} vote${count === 1 ? '' : 's'}`;
-      }
-      if (result && result.success && result.data && result.data.voted_at) {
-        return 'Vote détecté récemment';
-      }
-      return 'Statut ServeurPrivé inconnu';
-    }
-
-    async function fetchServerVotes() {
-      const ip = await getPublicIp();
-      return await checkVoteByIp(ip);
-    }
-
-    function updateServerVoteDisplay(result) {
-      const count = parseServerVoteCount(result);
-      if (count !== null) {
-        votesTotal.textContent = formatVotes(count);
-        const tier = findTier(count);
-        if (tier) {
-          currentTier.textContent = tier.label;
-          const next = tiers[tiers.indexOf(tier) + 1];
-          const remaining = next ? Math.max(next.min - count, 0) : 0;
-          votesRemaining.textContent = remaining > 0 ? `${remaining} vote${remaining === 1 ? '' : 's'}` : 'Palier max';
-          tierInfo.innerHTML = `<p>Ton total de votes est enregistré sur ServeurPrivé. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
-        }
-      }
-      serverVoteInfo.innerHTML = `<p>${formatServerVoteStatus(result)}</p>`;
-    }
-
-    function pickRandomReward() {
-      return voteRewards[Math.floor(Math.random() * voteRewards.length)];
-    }
-
     async function handleVoteButton() {
-      voteStatus.innerHTML = '<p>Calcul de l’IP publique et préparation de la vérification...</p>';
+      voteStatus.innerHTML = '<p>Ouverture de la page de vote officielle...</p>';
 
-      try {
-        const userIp = await getPublicIp();
-        voteStatus.innerHTML = `<p>IP détectée : <strong>${userIp}</strong>. Vérification de l’état avant le vote...</p>`;
-
-        const beforeVote = await checkVoteByIp(userIp);
-        const beforeVoteAt = beforeVote.success ? beforeVote.data.voted_at : 0;
-        const voteWindow = window.open(voteUrl, '_blank');
-
-        if (!voteWindow) {
-          voteStatus.innerHTML = '<p>Le navigateur a bloqué l’ouverture de la nouvelle fenêtre. Autorise les popups puis réessaie.</p>';
-          return;
-        }
-
-        const delaySeconds = 15;
-        let remainingSeconds = delaySeconds;
-        voteStatus.innerHTML = `<p>Vérification du vote dans ${remainingSeconds} secondes...</p>`;
-        const countdown = setInterval(() => {
-          remainingSeconds -= 1;
-          if (remainingSeconds >= 0) {
-            voteStatus.innerHTML = `<p>Vérification du vote dans ${remainingSeconds} secondes...</p>`;
-          }
-        }, 1000);
-
-        await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
-        clearInterval(countdown);
-
-        const afterVote = await checkVoteByIp(userIp);
-        const afterVoteAt = afterVote.success ? afterVote.data.voted_at : 0;
-
-        if (afterVote.success && afterVoteAt > beforeVoteAt) {
-          const reward = pickRandomReward();
-          voteStatus.innerHTML = `<p>Vote confirmé ! Récompense obtenue : <strong>${reward}</strong>.</p>`;
-        } else if (afterVote.success && beforeVote.success && afterVoteAt === beforeVoteAt) {
-          voteStatus.innerHTML = '<p>Tu as déjà voté récemment. Aucune nouvelle action détectée, recharge plus tard si nécessaire.</p>';
-        } else if (afterVote.success) {
-          const reward = pickRandomReward();
-          voteStatus.innerHTML = `<p>Vote confirmé ! Récompense obtenue : <strong>${reward}</strong>.</p>`;
-        } else {
-          voteStatus.innerHTML = '<p>Vote non confirmé après 15 secondes. Si tu as bien voté, réessaie ou attends un peu plus longtemps.</p>';
-        }
-        try {
-          const updatedServerVotes = await fetchServerVotes();
-          const count = parseServerVoteCount(updatedServerVotes);
-          if (count !== null) {
-            updateDisplay({ username: connectedUser.textContent, votes: count, serverVoteResult: updatedServerVotes });
-          }
-        } catch (error) {
-          serverVoteInfo.innerHTML = `<p>Impossible de rafraîchir ServeurPrivé : ${error.message}</p>`;
-        }
-      } catch (error) {
-        voteStatus.innerHTML = `<p>Erreur lors de la vérification : ${error.message}</p>`;
+      const voteWindow = window.open(voteUrl, '_blank');
+      if (!voteWindow) {
+        voteStatus.innerHTML = '<p>Le navigateur a bloqué l’ouverture de la nouvelle fenêtre. Autorise les popups puis réessaie.</p>';
+        return;
       }
+
+      voteStatus.innerHTML = '<p>La page de vote officiel est ouverte. Après avoir voté, recharge la page ou clique sur "Rafraîchir les statistiques officielles".</p>';
     }
 
     async function loadOfficialStats() {
@@ -786,11 +643,11 @@
           const userCredential = await auth.createUserWithEmailAndPassword(email, password);
           await db.collection('users').doc(userCredential.user.uid).set({ username, votes: 0 });
           authStatus.innerHTML = `<p>Compte créé pour <strong>${username}</strong>.</p>`;
-          updateDisplay({ username, votes: 0, serverVoteResult: null });
+          updateDisplay({ username, serverVoteCount: 0 });
         } else {
           await auth.signInWithEmailAndPassword(email, password);
           authStatus.innerHTML = `<p>Connexion réussie pour <strong>${username}</strong>.</p>`;
-          updateDisplay({ username, votes: 0, serverVoteResult: null });
+          updateDisplay({ username, serverVoteCount: 0 });
         }
       } catch (error) {
         authStatus.innerHTML = `<p>${error.message}</p>`;
