@@ -574,16 +574,125 @@
       return result.data[0];
     }
 
+    async function fetchVoteFormToken() {
+      const response = await fetch(voteUrl, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Impossible de charger la page de vote (${response.status}).`);
+      }
+
+      const html = await response.text();
+      const tokenMatch = html.match(/name="_token" value="([^"]+)"/);
+      if (!tokenMatch) {
+        throw new Error('Token de vote introuvable sur le site ServeurPrivé.');
+      }
+
+      return tokenMatch[1];
+    }
+
+    async function verifyVoteByUsername(username) {
+      const token = await fetchVoteFormToken();
+      const ipCode = `${Date.now()}_${Math.random().toString().substring(2)}`;
+      const payload = new URLSearchParams();
+      payload.set('_token', token);
+      payload.set('ip_code', ipCode);
+      payload.set('username', username);
+
+      let response;
+      try {
+        response = await fetch('https://serveur-prive.net/minecraft/jellflysmp/vote/form/ajax', {
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+            'Referer': voteUrl
+          },
+          body: payload.toString()
+        });
+      } catch (error) {
+        return { status: 'error', message: error.message };
+      }
+
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        return { status: 'error', message: 'Réponse inattendue du serveur ServeurPrivé.' };
+      }
+
+      if (result.success) {
+        return { status: 'voted', message: 'Vote confirmé ou déjà voté.' };
+      }
+
+      const dataMessage = Array.isArray(result.data) ? result.data.join(' ') : String(result.data || '');
+      const normalized = dataMessage.toLowerCase();
+      if (normalized.includes('captcha')) {
+        return { status: 'captcha', message: 'Captcha requis. Impossible de vérifier automatiquement.' };
+      }
+      if (normalized.includes('déjà') || normalized.includes('already')) {
+        return { status: 'already', message: 'Le pseudo a déjà voté récemment.' };
+      }
+
+      return { status: 'unknown', message: dataMessage || 'Statut ServeurPrivé inconnu.' };
+    }
+
+    let voteVerificationInProgress = false;
+
     async function handleVoteButton() {
+      if (voteVerificationInProgress) {
+        return;
+      }
+
+      const username = connectedUser.textContent;
+      if (!username || username === 'Aucun') {
+        voteStatus.innerHTML = '<p>Connecte-toi pour vérifier ton vote.</p>';
+        return;
+      }
+
+      voteVerificationInProgress = true;
+      voteButton.disabled = true;
       voteStatus.innerHTML = '<p>Ouverture de la page de vote officielle...</p>';
 
       const voteWindow = window.open(voteUrl, '_blank');
       if (!voteWindow) {
         voteStatus.innerHTML = '<p>Le navigateur a bloqué l’ouverture de la nouvelle fenêtre. Autorise les popups puis réessaie.</p>';
+        voteVerificationInProgress = false;
+        voteButton.disabled = false;
         return;
       }
 
-      voteStatus.innerHTML = '<p>La page de vote officiel est ouverte. Après avoir voté, recharge la page ou clique sur "Rafraîchir les statistiques officielles".</p>';
+      let remainingSeconds = 15;
+      voteStatus.innerHTML = `<p>La page de vote est ouverte. Vérification dans ${remainingSeconds} secondes...</p>`;
+      const countdown = setInterval(() => {
+        remainingSeconds -= 1;
+        if (remainingSeconds >= 0) {
+          voteStatus.innerHTML = `<p>Vérification dans ${remainingSeconds} secondes...</p>`;
+        }
+      }, 1000);
+
+      await new Promise(resolve => setTimeout(resolve, 15000));
+      clearInterval(countdown);
+
+      voteStatus.innerHTML = '<p>Vérification du statut de vote...</p>';
+      const verification = await verifyVoteByUsername(username);
+
+      if (verification.status === 'voted' || verification.status === 'already') {
+        voteStatus.innerHTML = `<p>${verification.message}</p><p>Si tu veux vérifier à nouveau, clique de nouveau sur le bouton.</p>`;
+      } else if (verification.status === 'captcha') {
+        voteStatus.innerHTML = `<p>${verification.message}</p><p>Va sur la page de vote ouverte, complète le captcha puis clique de nouveau pour revérifier.</p>`;
+      } else {
+        voteStatus.innerHTML = `<p>Impossible de confirmer le vote automatiquement : ${verification.message}</p><p>Recharge la page de vote et réessaie.</p>`;
+      }
+
+      voteVerificationInProgress = false;
+      voteButton.disabled = false;
     }
 
     async function loadOfficialStats() {
