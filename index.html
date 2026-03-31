@@ -262,7 +262,7 @@
     <div class="topbar">
       <div>
         <h1>Vote ServeurPrivé</h1>
-        <p>Connecte-toi pour afficher ton nombre de votes stocké en base de données. Le palier est calculé directement depuis ton compte.</p>
+        <p>Connecte-toi pour afficher ton nombre de votes ServeurPrivé. Le palier est calculé directement depuis le total de votes du serveur.</p>
       </div>
     </div>
     <div class="layout">
@@ -295,7 +295,6 @@
         <div class="control-row" id="accountControls" style="display:none;">
           <button class="action-button" id="logoutButton">Se déconnecter<span>Sortie</span></button>
           <button class="action-button" id="voteButton">Ouvrir le vote<span>serveur-prive.net</span></button>
-          <button class="action-button" id="incrementVoteButton">Ajouter +1 vote<span>Base de données</span></button>
         </div>
 
         <div class="status-box" id="voteStatus">
@@ -303,7 +302,7 @@
         </div>
 
         <div class="info-text">
-          Le nombre de votes est stocké dans la base de données. L’interface affiche ton palier et te laisse ouvrir le lien de vote officiel.
+          Le nombre de votes affiché provient de ServeurPrivé. L’interface utilise ce total pour calculer ton palier et te laisse ouvrir le lien de vote officiel.
         </div>
       </aside>
 
@@ -316,12 +315,8 @@
             <strong id="connectedUser">Aucun</strong>
           </div>
           <div class="stat-item">
-            <span>Votes enregistrés</span>
-            <strong id="votesTotal">0 votes</strong>
-          </div>
-          <div class="stat-item">
             <span>Votes ServeurPrivé</span>
-            <strong id="serverVotes">N/A</strong>
+            <strong id="votesTotal">0 votes</strong>
           </div>
           <div class="stat-item">
             <span>Palier actuel</span>
@@ -441,7 +436,6 @@
     const registerButton = document.getElementById('registerButton');
     const logoutButton = document.getElementById('logoutButton');
     const voteButton = document.getElementById('voteButton');
-    const incrementVoteButton = document.getElementById('incrementVoteButton');
     const loadOfficialButton = document.getElementById('loadOfficialButton');
     const officialRank = document.getElementById('officialRank');
     const officialTotalVotes = document.getElementById('officialTotalVotes');
@@ -449,7 +443,6 @@
     const officialTopVoters = document.getElementById('officialTopVoters');
     const officialStatus = document.getElementById('officialStatus');
     const voteStatus = document.getElementById('voteStatus');
-    const serverVotes = document.getElementById('serverVotes');
     const serverVoteInfo = document.getElementById('serverVoteInfo');
 
     const voteUrl = 'https://serveur-prive.net/minecraft/jellflysmp/vote';
@@ -500,7 +493,6 @@
       if (!user) {
         connectedUser.textContent = 'Aucun';
         votesTotal.textContent = '0 votes';
-        serverVotes.textContent = 'N/A';
         currentTier.textContent = 'Aucun';
         votesRemaining.textContent = '1 vote';
         tierInfo.innerHTML = '<p>Connecte-toi pour voir ton palier et les récompenses associées.</p>';
@@ -510,14 +502,14 @@
       }
 
       connectedUser.textContent = user.username;
-      votesTotal.textContent = formatVotes(user.votes);
+      const votes = typeof user.serverVoteCount === 'number' ? user.serverVoteCount : (typeof user.votes === 'number' ? user.votes : null);
+      votesTotal.textContent = typeof votes === 'number' ? formatVotes(votes) : 'N/A';
       if (user.serverVoteResult) {
         updateServerVoteDisplay(user.serverVoteResult);
       } else {
-        serverVotes.textContent = 'N/A';
         serverVoteInfo.innerHTML = '<p>Chargement des votes ServeurPrivé...</p>';
       }
-      const tier = findTier(user.votes);
+      const tier = typeof votes === 'number' ? findTier(votes) : null;
       accountControls.style.display = 'flex';
 
       if (!tier) {
@@ -529,7 +521,7 @@
 
       currentTier.textContent = tier.label;
       const next = tiers[tiers.indexOf(tier) + 1];
-      const remaining = next ? Math.max(next.min - user.votes, 0) : 0;
+      const remaining = next ? Math.max(next.min - votes, 0) : 0;
       votesRemaining.textContent = remaining > 0 ? `${remaining} vote${remaining === 1 ? '' : 's'}` : 'Palier max';
       tierInfo.innerHTML = `<p>Ton total de votes est enregistré en base de données. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
     }
@@ -552,10 +544,11 @@
 
         const data = doc.data();
         authStatus.innerHTML = `<p>Connecté en tant que <strong>${data.username}</strong>.</p>`;
-        updateDisplay({ username: data.username, votes: data.votes, serverVoteResult: null });
+        updateDisplay({ username: data.username, votes: null, serverVoteResult: null });
         try {
           const serverVoteResult = await fetchServerVotes();
-          updateDisplay({ username: data.username, votes: data.votes, serverVoteResult });
+          const serverVoteCount = parseServerVoteCount(serverVoteResult);
+          updateDisplay({ username: data.username, votes: serverVoteCount, serverVoteResult });
         } catch (error) {
           serverVoteInfo.innerHTML = `<p>Erreur ServeurPrivé : ${error.message}</p>`;
         }
@@ -661,7 +654,17 @@
 
     function updateServerVoteDisplay(result) {
       const count = parseServerVoteCount(result);
-      serverVotes.textContent = count !== null ? `${count} vote${count === 1 ? '' : 's'}` : 'N/A';
+      if (count !== null) {
+        votesTotal.textContent = formatVotes(count);
+        const tier = findTier(count);
+        if (tier) {
+          currentTier.textContent = tier.label;
+          const next = tiers[tiers.indexOf(tier) + 1];
+          const remaining = next ? Math.max(next.min - count, 0) : 0;
+          votesRemaining.textContent = remaining > 0 ? `${remaining} vote${remaining === 1 ? '' : 's'}` : 'Palier max';
+          tierInfo.innerHTML = `<p>Ton total de votes est enregistré sur ServeurPrivé. Tu es actuellement au <strong>${tier.label}</strong>${remaining > 0 ? `, il te manque <strong>${remaining}</strong> vote${remaining === 1 ? '' : 's'} pour le palier suivant.` : ', tu as atteint le palier maximal.'}</p>`;
+        }
+      }
       serverVoteInfo.innerHTML = `<p>${formatServerVoteStatus(result)}</p>`;
     }
 
@@ -714,7 +717,10 @@
         }
         try {
           const updatedServerVotes = await fetchServerVotes();
-          updateServerVoteDisplay(updatedServerVotes);
+          const count = parseServerVoteCount(updatedServerVotes);
+          if (count !== null) {
+            updateDisplay({ username: connectedUser.textContent, votes: count, serverVoteResult: updatedServerVotes });
+          }
         } catch (error) {
           serverVoteInfo.innerHTML = `<p>Impossible de rafraîchir ServeurPrivé : ${error.message}</p>`;
         }
@@ -797,35 +803,10 @@
       updateDisplay(null);
     }
 
-    async function handleIncrementVote() {
-      const firebaseUser = auth.currentUser;
-      if (!firebaseUser) {
-        authStatus.innerHTML = '<p>Tu dois être connecté pour ajouter un vote.</p>';
-        return;
-      }
-
-      const userRef = db.collection('users').doc(firebaseUser.uid);
-      try {
-        await db.runTransaction(async tx => {
-          const doc = await tx.get(userRef);
-          if (!doc.exists) throw new Error('Utilisateur introuvable.');
-          const currentVotes = doc.data().votes || 0;
-          tx.update(userRef, { votes: currentVotes + 1 });
-        });
-        const updatedDoc = await userRef.get();
-        const data = updatedDoc.data();
-        authStatus.innerHTML = `<p>Vote ajouté. Total actuel : <strong>${data.votes}</strong>.</p>`;
-        updateDisplay({ username: data.username, votes: data.votes });
-      } catch (error) {
-        authStatus.innerHTML = `<p>${error.message}</p>`;
-      }
-    }
-
     loginButton.addEventListener('click', () => handleAuth('login'));
     registerButton.addEventListener('click', () => handleAuth('register'));
     logoutButton.addEventListener('click', handleLogout);
     voteButton.addEventListener('click', handleVoteButton);
-    incrementVoteButton.addEventListener('click', handleIncrementVote);
     loadOfficialButton.addEventListener('click', loadOfficialStats);
 
     loadUser();
